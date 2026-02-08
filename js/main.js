@@ -30,14 +30,25 @@ Vue.component('product', {
         </div>
         <a :href="link">More products like this</a>
 
-        <div class="cart">
-            <p>Cart({{ cart }})</p>
-        </div>
+
         <div class="buttons">
             <button v-on:click="addToCart" :disabled="!inStock" :class="{ disabledButton: !inStock }">Add to
                 cart</button>
             <button v-on:click="deleteFromCart">Delete from cart</button>
         </div>
+
+        <div class="reviews">
+            <h2>Reviews</h2>
+            <p v-if="reviews.length === 0">There are no reviews yet.</p>
+            <ul v-else>
+                <li v-for="(review, index) in reviews" :key="index">
+                    <strong>{{ review.name }}</strong>
+                    <p>Rating: {{ review.rating }} / 5</p>
+                    <p>{{ review.review }}</p>
+                </li>
+            </ul>
+        </div>
+        <product-review @review-submitted="addReview"></product-review>
     </div>
 </div>`,
 
@@ -69,24 +80,26 @@ Vue.component('product', {
                 }
             ],
             sizes: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-            cart: 0,
+            reviews: [],
         };
     },
     methods: {
         addToCart() {
-            this.cart += 1
+            this.$emit('add-to-cart',
+                this.variants[this.selectedVariant].variantId);
         },
         deleteFromCart() {
-            if (this.cart > 0) {
-                this.cart -= 1;
-            }
+            this.$emit('delete-from-cart',
+                this.variants[this.selectedVariant].variantId);
         },
         updateProduct(index) {
-            this.selectedVarian = index;
+            this.selectedVariant = index;
             console.log(index);
         },
+        addReview(review) {
+            this.reviews.push(review);
+        },
     },
-
     computed: {
         title() {
             return this.brand + ' ' + this.product;
@@ -107,13 +120,8 @@ Vue.component('product', {
         shipping() {
             return this.premium ? "Free" : 2.99;
         },
-
     },
-
-
 })
-
-
 Vue.component('product-details', {
     props: {
         details: {
@@ -121,18 +129,98 @@ Vue.component('product-details', {
             required: true
         }
     },
-    template:`
+    template: `
     <ul>
         <li v-for="detail in details">{{ detail }}</li>
     </ul>`
 })
 
-
 let app = new Vue({
     el: '#app',
     data: {
-        premium: true
+        premium: true,
+        cart: []
+    },
+    methods: {
+        updateCart(id) {
+            this.cart.push(id);
+        },
+        removeFromCart(id) {
+            const index = this.cart.indexOf(id);
+            if (index !== -1) {
+                this.cart.splice(index, 1);
+            }
+        },
     }
 })
+Vue.component('product-review', {
+    template: `
+    <form class="review-form" @submit.prevent="onSubmit">
+    <!-- Вывод ошибок -->
+    <p v-if="errors.length" class="error">
+      <b>Please correct the following error(s):</b>
+      <ul>
+        <li v-for="error in errors" :key="error">{{ error }}</li>
+      </ul>
+    </p>
+
+    <p>
+      <label for="name">Name:</label>
+      <input id="name" v-model="name" placeholder="name" required>
+    </p>
+
+    <p>
+      <label for="review">Review:</label>
+      <textarea id="review" v-model="review" placeholder="Write your review..."></textarea>
+    </p>
+
+    <p>
+      <label for="rating">Rating:</label>
+      <select id="rating" v-model.number="rating">
+        <option disabled value="">Select rating</option>
+        <option :value="5">5 (Excellent)</option>
+        <option :value="4">4 (Good)</option>
+        <option :value="3">3 (Average)</option>
+        <option :value="2">2 (Poor)</option>
+        <option :value="1">1 (Terrible)</option>
+      </select>
+    </p>
+
+    <p>
+      <input type="submit" value="Submit Review">
+    </p>
+  </form>
+  `,
+    data() {
+        return {
+            name: '',
+            review: '',
+            rating: null,
+            errors: []
+        };
+    },
+    metods: {
+        onSubmit() {
+            this.errors = [];
+            if (!this.name) this.errors.push("Name is required.");
+            if (!this.review) this.errors.push("Review is required.");
+            if (this.rating === null || this.rating === '') this.errors.push("Rating is required.");
+
+            if (this.errors.length === 0) {
+                const productReview = {
+                    name: this.name,
+                    review: this.review,
+                    rating: Number(this.rating)
+                };
+                this.$emit('review-submitted', productReview);
+
+                this.name = '';
+                this.review = '';
+                this.rating = null;
+            }
+        }
+    }
+})
+
 
 
