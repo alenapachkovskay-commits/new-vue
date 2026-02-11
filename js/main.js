@@ -280,6 +280,7 @@ let app = new Vue({
     methods: {
         updateCart(id) {
             this.cart.push(id);
+            console.log('product added in the busket', id)
         },
         removeFromCart(id) {
             const index = this.cart.indexOf(id);
