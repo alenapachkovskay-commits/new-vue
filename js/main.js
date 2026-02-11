@@ -239,12 +239,26 @@ Vue.component('product', {
             this.selectedVariant = index;
             console.log(index);
         },
+        saveReviews() {
+            localStorage.setItem('productReviews', JSON.stringify(this.reviews));
+            console.log('hf,work');
+        },
+        ReviewslocalStorage() {
+            const saveReviews = localStorage.getItem('productReviews');
+            if (saveReviews) {
+                this.reviews = JSON.parse(saveReviews);
+                console.log('hf,work2');
+            }
+        },
 
 
     },
     mounted() {
+        this.ReviewslocalStorage();
+
         eventBus.$on('review-submitted', (productReview) => {
             this.reviews.push(productReview);
+            this.saveReviews();
         });
     },
     computed: {
